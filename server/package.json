@@ -1,0 +1,15 @@
+{
+  "name": "meeting-timer-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "In-memory timer service for the meeting-timer app (admin + viewer links, SSE live updates).",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "qrcode": "^1.5.4"
+  }
+}

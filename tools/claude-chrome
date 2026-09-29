@@ -1,0 +1,23 @@
+#!/bin/bash
+
+PROFILE="/tmp/claude-chrome-profile"
+mkdir -p "$PROFILE"
+
+# Chrome's crash handler (crashpad) and its --disable-dev-shm-usage shared-memory
+# fallback both default to paths outside --user-data-dir (~/.config/google-chrome
+# and bare /tmp respectively). Redirecting them into our own fully-writable
+# profile dir keeps Chrome from ever touching the real Chrome config.
+export XDG_CONFIG_HOME="$PROFILE"
+export XDG_CACHE_HOME="$PROFILE"
+export TMPDIR="$PROFILE"
+
+exec google-chrome \
+  --user-data-dir="$PROFILE" \
+  --no-first-run \
+  --no-default-browser-check \
+  --disable-sync \
+  --disable-extensions \
+  --password-store=basic \
+  --disable-crash-reporter \
+  --disable-dev-shm-usage \
+  "$@"

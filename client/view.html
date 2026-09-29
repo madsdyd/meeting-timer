@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="da">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Talerstol Timer</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <main class="page page--viewer" id="app" hidden>
+    <section class="panel timer" id="timer-container"></section>
+  </main>
+
+  <p class="panel" id="error" hidden></p>
+
+  <script src="js/api.js"></script>
+  <script src="js/timerDisplay.js"></script>
+  <script>
+    const token = new URLSearchParams(location.search).get('token');
+    const errorEl = document.getElementById('error');
+
+    function fail(message) {
+      errorEl.textContent = message;
+      errorEl.hidden = false;
+    }
+
+    if (!token) {
+      fail('Mangler token i linket.');
+    } else {
+      init();
+    }
+
+    async function init() {
+      let initial;
+      try {
+        initial = await getMeetingState(token);
+      } catch (err) {
+        return fail('Kunne ikke finde mødet. Tjek at linket er korrekt.');
+      }
+
+      document.getElementById('app').hidden = false;
+
+      const display = createTimerDisplay(document.getElementById('timer-container'), { showTitleInStatus: true });
+      display.update(initial);
+
+      subscribeToMeeting(token, (state) => {
+        display.update(state);
+      });
+    }
+  </script>
+</body>
+</html>

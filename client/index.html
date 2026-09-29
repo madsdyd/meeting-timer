@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="da">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Talerstol Timer</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <main class="page">
+    <div>
+      <h1>Talerstol Timer</h1>
+      <p>Opret et nyt møde/punkt og få et styringslink (til dirigenten) og et visningslink (til talere og tilhørere).</p>
+    </div>
+
+    <form class="panel" id="create-form">
+      <label for="title">Titel (valgfri)</label>
+      <input type="text" id="title" placeholder="F.eks. Dagsordenspunkt 1" />
+
+      <label>Taletid (min:sek)</label>
+      <div id="duration"></div>
+
+      <div class="button-row" style="margin-top:16px;">
+        <button type="submit" class="primary">Opret møde</button>
+      </div>
+    </form>
+  </main>
+
+  <script src="js/api.js"></script>
+  <script src="js/duration.js"></script>
+  <script>
+    const form = document.getElementById('create-form');
+    const titleInput = document.getElementById('title');
+    const durationInput = createDurationInput(document.getElementById('duration'), { seconds: 90 });
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const title = titleInput.value.trim();
+      const duration = durationInput.getSeconds();
+
+      const { adminToken } = await createMeeting({ title, duration });
+
+      location.href = `${location.origin}/admin.html?token=${adminToken}`;
+    });
+  </script>
+</body>
+</html>

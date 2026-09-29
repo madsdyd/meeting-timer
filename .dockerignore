@@ -1,0 +1,8 @@
+**/node_modules
+server/server.test.js
+server.log
+*.log
+.git
+.gitignore
+CLAUDE.md
+README.md

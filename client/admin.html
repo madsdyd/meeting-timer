@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="da">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dirigent - Talerstol Timer</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <main class="page" id="app" hidden>
+    <div>
+      <div class="meta-title" id="meeting-title">Møde</div>
+      <p class="footer-note">Dette link styrer timeren. Del det <strong>ikke</strong> med talere/tilhørere - brug visningslinket til det.</p>
+    </div>
+
+    <section class="panel timer" id="timer-container"></section>
+
+    <section class="panel">
+      <div class="button-row">
+        <button type="button" class="primary" id="btn-start">Start</button>
+        <button type="button" id="btn-pause">Pause</button>
+        <button type="button" id="btn-reset">Nulstil</button>
+        <button type="button" id="btn-restart">Genstart</button>
+      </div>
+
+      <label>Taletid (min:sek)</label>
+      <div class="button-row">
+        <div id="duration" style="flex:1;"></div>
+        <button type="button" id="btn-adjust">Sæt tid</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <label>Visningslink (del med talere/tilhørere)</label>
+      <div class="link-box">
+        <span id="viewer-link"></span>
+        <div class="link-box-actions">
+          <a id="viewer-open" href="#" target="_blank"><button type="button">Åbn</button></a>
+          <button type="button" class="icon-button" id="btn-share-viewer"></button>
+        </div>
+      </div>
+      <div class="qr" id="viewer-qr" style="margin-top:16px;"></div>
+    </section>
+  </main>
+
+  <p class="panel" id="error" hidden></p>
+
+  <script src="js/api.js"></script>
+  <script src="js/duration.js"></script>
+  <script src="js/timerDisplay.js"></script>
+  <script>
+    const token = new URLSearchParams(location.search).get('token');
+    const errorEl = document.getElementById('error');
+
+    function fail(message) {
+      errorEl.textContent = message;
+      errorEl.hidden = false;
+    }
+
+    if (!token) {
+      fail('Mangler token i linket.');
+    } else {
+      init();
+    }
+
+    async function init() {
+      let initial;
+      try {
+        initial = await getMeetingState(token);
+      } catch (err) {
+        return fail('Kunne ikke finde mødet. Tjek at linket er korrekt.');
+      }
+      if (initial.role !== 'admin') {
+        return fail('Dette link giver ikke adgang til at styre timeren.');
+      }
+
+      document.getElementById('app').hidden = false;
+      document.getElementById('meeting-title').textContent = initial.title;
+      const durationInput = createDurationInput(document.getElementById('duration'), { seconds: initial.duration });
+
+      const viewerUrl = `${location.origin}/view.html?token=${initial.viewerToken}`;
+      document.getElementById('viewer-link').textContent = viewerUrl;
+      document.getElementById('viewer-open').href = viewerUrl;
+      document.getElementById('viewer-qr').innerHTML =
+        `<img src="${qrCodeUrl(viewerUrl)}" alt="QR-kode til visningslink" />`;
+
+      setupShareButton(viewerUrl, initial.title);
+
+      const display = createTimerDisplay(document.getElementById('timer-container'));
+
+      let latest = initial;
+      display.update(latest);
+
+      subscribeToMeeting(token, (state) => {
+        latest = state;
+        display.update(state);
+      });
+
+      document.getElementById('btn-start').addEventListener('click', () => startMeeting(token).catch(showApiError));
+      document.getElementById('btn-pause').addEventListener('click', () => pauseMeeting(token).catch(showApiError));
+      document.getElementById('btn-reset').addEventListener('click', () => resetMeeting(token).catch(showApiError));
+      document.getElementById('btn-restart').addEventListener('click', () => restartMeeting(token).catch(showApiError));
+      document.getElementById('btn-adjust').addEventListener('click', () => {
+        adjustMeeting(token, durationInput.getSeconds()).catch(showApiError);
+      });
+    }
+
+    function showApiError(err) {
+      fail(`Handling fejlede: ${err.message}`);
+    }
+
+    // On mobile, hand the link to the OS share sheet; elsewhere, copy it to
+    // the clipboard - either way sparing people from selecting/copying the
+    // URL text by hand to paste it into a mail or chat.
+    const COPY_ICON = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
+    const SHARE_ICON = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg>';
+    const CHECK_ICON = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+
+    function setupShareButton(url, title) {
+      const btn = document.getElementById('btn-share-viewer');
+      const canShare = typeof navigator.share === 'function';
+
+      const label = canShare ? 'Del visningslink' : 'Kopiér visningslink';
+      btn.innerHTML = canShare ? SHARE_ICON : COPY_ICON;
+      btn.setAttribute('aria-label', label);
+      btn.title = label;
+
+      btn.addEventListener('click', async () => {
+        if (canShare) {
+          try {
+            await navigator.share({ url, title });
+          } catch (err) {
+            // AbortError etc. when the user dismisses the share sheet - nothing to do.
+          }
+          return;
+        }
+        try {
+          await navigator.clipboard.writeText(url);
+          btn.innerHTML = CHECK_ICON;
+          setTimeout(() => { btn.innerHTML = COPY_ICON; }, 1500);
+        } catch (err) {
+          fail('Kunne ikke kopiere linket.');
+        }
+      });
+    }
+  </script>
+</body>
+</html>

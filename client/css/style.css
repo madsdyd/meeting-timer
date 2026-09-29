@@ -1,0 +1,226 @@
+/*
+ * Visually modelled on resolutioner.radikale.dk: same colour tokens, font
+ * stack, card/pill shapes and weight scale, reused here for the talerstol
+ * timer's own UI (create form, admin controls, read-only countdown view).
+ */
+
+:root {
+  color-scheme: light;
+  --rv-green: #009540;
+  --rv-magenta: #e5007e;
+  --rv-magenta-rgb: 229, 0, 126;
+  --ink: #151515;
+  --muted: #626262;
+  --line: #dedede;
+  --soft: #f5f7f5;
+  --soft-magenta: #fff1f8;
+  --shadow: 0 16px 45px rgba(0, 0, 0, .08);
+  --track: #dedede;
+  --fill: var(--rv-green); /* normal, plenty of time */
+  --warning: var(--rv-magenta); /* last 10s - same colour RV uses for "expires this year" */
+  --danger: #dc2626; /* deliberate exception to RV's palette: overtime needs an unambiguous stop/alarm red */
+  --accent: var(--rv-magenta);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f7fbf8 0%, #ffffff 44%, #fff5fa 100%);
+  color: var(--ink);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+h1, h2 { margin: 0 0 8px; font-weight: 800; }
+p { color: var(--muted); }
+
+a { color: var(--accent); }
+
+.page {
+  width: 100%;
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  align-items: stretch;
+}
+
+.panel {
+  background: rgba(255, 255, 255, .94);
+  border: 1px solid var(--line);
+  border-radius: 1.25rem;
+  box-shadow: var(--shadow);
+  padding: 20px;
+  color: var(--ink);
+}
+
+label { display: block; margin: 12px 0 6px; font-size: 14px; font-weight: 720; color: var(--ink); }
+/* A label that opens a panel already gets the panel's own 20px padding above it -
+   its own 12px margin-top on top of that made the gap unnecessarily tall. */
+.panel label:first-child { margin-top: 0; }
+
+input[type="text"], input[type="number"] {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: .85rem;
+  border: 1px solid #cfcfcf;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px;
+}
+input:focus { outline: 3px solid rgba(var(--rv-magenta-rgb), .18); border-color: var(--accent); }
+
+button {
+  font-size: 16px;
+  padding: .72rem 1.1rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--soft);
+  color: var(--ink);
+  font-weight: 720;
+  cursor: pointer;
+  white-space: nowrap;
+}
+button:hover { filter: brightness(.96); }
+button:disabled { opacity: 0.4; cursor: not-allowed; }
+button.primary { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 760; }
+
+.button-row { display: flex; gap: 10px; flex-wrap: wrap; }
+
+.duration-input { display: flex; align-items: stretch; gap: 8px; }
+.duration-field {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.05em;
+}
+.duration-steppers { display: flex; flex-direction: column; gap: 4px; }
+.duration-steppers button {
+  flex: 1;
+  padding: 0 12px;
+  font-size: 11px;
+  line-height: 1;
+}
+
+.link-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: var(--soft);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: .85rem;
+  padding: 8px 12px;
+  font-size: 14px;
+  word-break: break-all;
+}
+
+.link-box-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.icon-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  padding: 0;
+}
+
+.qr {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px;
+  width: 160px;
+  height: 160px;
+}
+.qr img { width: 100%; height: 100%; display: block; }
+
+/* --- Timer display, shared between admin + view --- */
+
+.timer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.timer-shape {
+  width: min(70vw, 320px);
+  height: min(70vw, 320px);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s linear;
+  /* Lets the digits below be sized in cqw/cqh, relative to *this* box's own
+     width/height, instead of the viewport - so they scale with the shape
+     itself (a small admin preview vs. a huge fullscreen viewer circle). */
+  container-type: size;
+}
+
+/* The viewer page has nothing else competing for space, so let the shape
+   grow to fill it - bounded by both vw and vh so the circle stays round on
+   any window shape. */
+.page--viewer { max-width: none; width: 100%; gap: 0; }
+body:has(.page--viewer) { justify-content: center; padding: 0; }
+.page--viewer .panel { padding: 6px; border: none; box-shadow: none; }
+.page--viewer .timer { gap: 6px; }
+
+.page--viewer .timer-shape {
+  width: min(94vw, 84vh);
+  height: min(94vw, 84vh);
+}
+
+.timer.is-warning .timer-shape { --fill: var(--warning); animation: pulse 1s ease-in-out infinite; }
+.timer.is-overtime .timer-shape { --fill: var(--danger); animation: alarm 0.5s ease-in-out infinite; }
+.timer.is-paused .timer-shape { opacity: 0.6; }
+
+.timer-digits {
+  font-variant-numeric: tabular-nums;
+  font-size: clamp(28px, 8vw, 56px); /* fallback for browsers without container query units */
+  font-size: clamp(28px, 32cqw, 320px); /* ~80% of the shape's own width fills with "00:00" at this weight/tracking */
+  font-weight: 800;
+  background: rgba(0, 0, 0, 0.4);
+  color: #fff; /* its own dark pill always sits on the coloured shape */
+  padding: 10px 18px;
+  border-radius: 14px;
+}
+
+.timer-status {
+  font-size: 18px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-weight: 720;
+  color: var(--muted);
+}
+.timer.is-warning .timer-status { color: var(--warning); }
+.timer.is-overtime .timer-status { color: var(--danger); }
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.03); }
+}
+
+@keyframes alarm {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.3; transform: scale(1.06); }
+}
+
+.meta-title {
+  font-size: clamp(26px, 6vw, 40px);
+  font-weight: 800;
+  line-height: 1.1;
+  margin-top: -10px; /* trims the oversized gap the larger font-size added above it, ~35% */
+  margin-bottom: 4px;
+  color: var(--ink);
+}
+
+.footer-note { font-size: 13px; color: var(--muted); text-align: center; }
