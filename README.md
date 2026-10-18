@@ -48,10 +48,17 @@ npm test
   browseren), og passer godt til at trafikken kun går én vej (server →
   klienter) — kun dirigenten sender kommandoer, og det sker via almindelige
   REST-kald.
-- **Klienten regner selv tiden lokalt.** Serveren gemmer kun et sluttidspunkt
-  (`endsAt`) og pusher kun besked ved *ændringer* (start/pause/juster).
-  Klienten tæller ned lokalt ud fra `endsAt` og sit eget ur, så visningen er
-  jævn uden at spamme serveren med opdateringer hvert sekund.
+- **Klienten regner selv tiden lokalt.** Serveren pusher besked ved
+  *ændringer* (start/pause/juster) og, mens timeren kører, en puls hvert 10.
+  sekund. Hver besked har den resterende tid i millisekunder (`remainingMs`),
+  og klienten tæller ned lokalt fra det tidspunkt beskeden ankom, så visningen
+  er jævn uden at spamme serveren med opdateringer hvert sekund.
+- **Ingen vægure i nedtællingen.** Både server og klient måler tid med et
+  monotont ur (`performance.now()`), så et forkert eller justeret systemur
+  (NTP, dvale, en telefon der retter sit ur) ikke flytter nedtællingen.
+  Afvigelsen er den tid en besked er undervejs, og pulsen sørger for at den
+  ikke hober sig op. Når en fane bliver synlig igen, genåbnes SSE-forbindelsen
+  med det samme.
 - **Overtid i stedet for stop ved 0.** Nedtællingen fortsætter i minus, og
   visningen blinker rødt, så det er tydeligt at taleren er "gået i overtid" -
   i stedet for bare at vise "00:00".
@@ -86,12 +93,19 @@ client/             Statiske sider, ingen build-step
 |--------|-----------------------------------|---------------------------------------|
 | POST   | `/api/meetings`                   | Opret møde `{ title?, duration }`     |
 | GET    | `/api/meetings/:token`            | Aktuel status                         |
-| GET    | `/api/meetings/:token/events`     | SSE-stream af statusændringer         |
+| GET    | `/api/meetings/:token/events`     | SSE-stream af statusændringer og puls |
 | POST   | `/api/meetings/:token/start`      | Start (kræver admin-token)            |
 | POST   | `/api/meetings/:token/pause`      | Pause (kræver admin-token)            |
 | POST   | `/api/meetings/:token/reset`      | Nulstil til oprindelig varighed       |
+| POST   | `/api/meetings/:token/restart`    | Nulstil og start i ét trin            |
 | POST   | `/api/meetings/:token/adjust`     | Sæt ny varighed `{ duration }`        |
 | GET    | `/api/qr?text=...`                | SVG QR-kode for en vilkårlig tekst    |
+
+Status (`GET`, SSE-begivenheden `state` og svaret på handlingerne) er
+`{ id, title, role, duration, remaining, remainingMs, running, endsAt }`, og for
+admin-token også `viewerToken`. `duration` og `remaining` er i sekunder,
+`remainingMs` i millisekunder og negativ i overtid. Klienten tæller ned fra
+`remainingMs`; `endsAt` er kun til information.
 
 ## Hvad der er skåret fra (givet tidsrammen)
 

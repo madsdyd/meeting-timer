@@ -81,3 +81,58 @@ test('invalid duration is rejected on create', async () => {
     assert.equal(res.status, 400);
   });
 });
+
+test('countdown ignores jumps in the server wall clock', async () => {
+  const store = require('./meetingStore');
+  const meeting = store.createMeeting({ duration: 120 });
+  store.start(meeting);
+  const realNow = Date.now;
+  try {
+    Date.now = () => realNow() + 60 * 60 * 1000; // wall clock jumps an hour ahead
+    assert.ok(store.computeRemaining(meeting) >= 119);
+  } finally {
+    Date.now = realNow;
+  }
+});
+
+test('pause and start keep millisecond precision', async () => {
+  const store = require('./meetingStore');
+  const meeting = store.createMeeting({ duration: 120 });
+  for (let i = 0; i < 20; i++) {
+    store.start(meeting);
+    store.pause(meeting);
+  }
+  // Rounding to whole seconds at each pause could have drifted up to 10s here.
+  assert.ok(meeting.remainingMs > 119000 && meeting.remainingMs <= 120000);
+  assert.equal(store.toPublicState(meeting, 'viewer').remainingMs, Math.round(meeting.remainingMs));
+});
+
+test('SSE stream sends the state as a heartbeat while running', async () => {
+  app.set('heartbeatMs', 50);
+  try {
+    await withServer(async (base) => {
+      const created = await postJson(`${base}/api/meetings`, { duration: 60 });
+      const { adminToken, viewerToken } = created.body;
+      await postJson(`${base}/api/meetings/${adminToken}/start`);
+
+      const controller = new AbortController();
+      const res = await fetch(`${base}/api/meetings/${viewerToken}/events`, { signal: controller.signal });
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let text = '';
+      while ((text.match(/event: state/g) || []).length < 3) {
+        const { value } = await reader.read();
+        text += decoder.decode(value, { stream: true });
+      }
+      controller.abort();
+
+      const states = text
+        .split('\n')
+        .filter((line) => line.startsWith('data: '))
+        .map((line) => JSON.parse(line.slice(6)));
+      assert.ok(states.every((s) => s.running && s.remainingMs > 0 && s.remainingMs <= 60000));
+    });
+  } finally {
+    app.set('heartbeatMs', 10000);
+  }
+});

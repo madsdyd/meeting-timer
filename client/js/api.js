@@ -19,33 +19,19 @@ async function createMeeting({ title, duration }) {
   return apiPost('/api/meetings', { title, duration });
 }
 
-// How far the client's own clock is from the server's (server minus client,
-// in ms). The live countdown adds this to Date.now() instead of trusting the
-// device's clock outright, since a client running a couple of seconds fast
-// or slow would otherwise show the countdown jumping at start.
-let clockOffsetMs = 0;
-
-function correctedNow() {
-  return Date.now() + clockOffsetMs;
+// Stamps a state with the local monotonic time it arrived. The countdown is
+// `remainingMs` minus the time elapsed since then, measured with
+// performance.now(), so it never depends on the device's wall clock, which may
+// be wrong or get adjusted while the page is open.
+function stampReceived(state) {
+  state.receivedAt = performance.now();
+  return state;
 }
 
 async function getMeetingState(token) {
-  const requestSentAt = Date.now();
   const res = await fetch(`/api/meetings/${token}`);
   if (!res.ok) throw new Error(`request-failed-${res.status}`);
-  const state = await res.json();
-
-  const receivedAt = Date.now();
-  if (typeof state.now === 'number') {
-    // Classic NTP-style estimate: assume the request/response latency was
-    // roughly symmetric, so the server's clock reading landed around the
-    // midpoint of the round trip.
-    const roundTrip = receivedAt - requestSentAt;
-    const estimatedServerNow = state.now + roundTrip / 2;
-    clockOffsetMs = estimatedServerNow - receivedAt;
-  }
-
-  return state;
+  return stampReceived(await res.json());
 }
 
 const startMeeting = (token) => apiPost(`/api/meetings/${token}/start`);
@@ -59,12 +45,24 @@ function qrCodeUrl(targetUrl) {
 }
 
 // Subscribes to live state updates for a token. Calls onState(state) on every
-// change (including an initial snapshot right after connecting), and
-// automatically reconnects (EventSource does this natively on drop).
+// change (including an initial snapshot right after connecting) and on the
+// server's periodic heartbeat while the timer runs. EventSource reconnects
+// natively on a drop; when the page becomes visible again (e.g. after the
+// device slept, which may also pause performance.now()) the connection is
+// reopened at once, so the countdown is re-anchored without waiting.
 function subscribeToMeeting(token, onState) {
-  const source = new EventSource(`/api/meetings/${token}/events`);
-  source.addEventListener('state', (event) => {
-    onState(JSON.parse(event.data));
+  let source = null;
+
+  function connect() {
+    if (source) source.close();
+    source = new EventSource(`/api/meetings/${token}/events`);
+    source.addEventListener('state', (event) => {
+      onState(stampReceived(JSON.parse(event.data)));
+    });
+  }
+
+  connect();
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') connect();
   });
-  return source;
 }

@@ -2,8 +2,9 @@
 // Renders the live countdown (digits + the circular fill) into a container
 // element. Shared between admin.html and view.html so both look identical.
 // Runs its own animation loop and derives the current remaining time from
-// `endsAt` + the local clock, so it stays smooth between the discrete state
-// updates pushed over SSE.
+// `remainingMs` and the time elapsed since the state arrived (see
+// stampReceived in api.js), so it stays smooth between the state updates
+// pushed over SSE.
 
 const WARNING_SECONDS = 10; // matches the "rømmer sig" cue the moderator used to give manually
 
@@ -32,8 +33,8 @@ function createTimerDisplay(container, { showTitleInStatus = false } = {}) {
 
   function liveRemaining() {
     if (!state) return 0;
-    if (!state.running || !state.endsAt) return state.remaining;
-    return (new Date(state.endsAt).getTime() - correctedNow()) / 1000;
+    if (!state.running) return state.remainingMs / 1000;
+    return (state.remainingMs - (performance.now() - state.receivedAt)) / 1000;
   }
 
   function render() {

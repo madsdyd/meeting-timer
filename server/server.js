@@ -10,6 +10,12 @@ const store = require('./meetingStore');
 const app = express();
 app.use(express.json());
 
+// How often an open SSE stream gets a heartbeat. While the timer runs, the
+// heartbeat is the full state, so clients re-anchor their countdown and any
+// error can't build up; while paused it is an SSE comment, which keeps
+// proxies from closing the idle connection.
+app.set('heartbeatMs', 10000);
+
 // meetingId -> Set of { res, role }, used to push SSE updates to open clients.
 const subscribers = new Map();
 
@@ -82,7 +88,13 @@ app.get('/api/meetings/:token/events', (req, res) => {
 
   sendState(res, resolved.meeting, resolved.role); // initial snapshot
 
+  const heartbeat = setInterval(() => {
+    if (resolved.meeting.running) sendState(res, resolved.meeting, resolved.role);
+    else res.write(': ping\n\n');
+  }, req.app.get('heartbeatMs'));
+
   req.on('close', () => {
+    clearInterval(heartbeat);
     subscribers.get(meetingId)?.delete(sub);
   });
 });
