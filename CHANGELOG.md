@@ -5,6 +5,8 @@ also the tag of the docker image and the git tag. See "Releasing" in [README.md]
 
 ## Unreleased
 
+## 2026-10-18
+
 - Fixed: the countdown could drift from the server over a long meeting, so speakers got less (or more) time than
   set. The clock offset was measured once when a page was opened, so a device or server clock adjusted later (NTP,
   sleep, a phone correcting its clock) shifted every countdown. Server and clients now count with a monotonic clock
