@@ -121,6 +121,8 @@ make image                  # byg et image fra arbejdskopien
 docker compose up -d        # kør det (meeting-timer:dev, eller MEETING_TIMER_IMAGE fra .env)
 ```
 
+`.env` committes ikke; kopiér skabelonen og ret den: `cp .env.example .env`.
+
 Containeren lytter kun på `127.0.0.1:3000` og er tænkt til at ligge bag en reverse proxy.
 
 ## Releasing
@@ -133,7 +135,7 @@ git-tag på det commit, det er bygget fra, og den version serveren logger ved op
 2. Kør `./release.sh` (eller `make release`). Den nægter at bygge, hvis der er ucommittede ændringer, eller hvis
    tagget findes i forvejen. Den bygger `meeting-timer:<version>`, tagger commit'et og skriver kommandoen til at
    pushe tagget. Den pusher aldrig selv.
-3. Sæt `MEETING_TIMER_IMAGE=meeting-timer:<version>` i `.env` og kør `docker compose up -d`.
+3. Sæt `MEETING_TIMER_IMAGE=meeting-timer:<version>` i `.env` (se `.env.example`) og kør `docker compose up -d`.
 
 Koden til en kørende version: `git show <version>`; ændringerne siden sidste: `git log <forrige>..<version>`.
 

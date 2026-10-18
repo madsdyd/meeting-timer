@@ -1,5 +1,5 @@
 # Runs meeting-timer. The image is meeting-timer:<version>, built with release.sh; set it with MEETING_TIMER_IMAGE,
-# e.g. in .env (not committed). Without it, the image is built from the working tree.
+# e.g. in .env (not committed, see .env.example). Without it, the image is built from the working tree.
 
 # A fixed project name keeps the container name (meeting-timer-meeting-timer-1) independent of the directory.
 name: meeting-timer

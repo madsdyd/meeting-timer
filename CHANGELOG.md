@@ -20,3 +20,4 @@ also the tag of the docker image and the git tag. See "Releasing" in [README.md]
 - A `Makefile` installs, tests and builds the docker image.
 - Docker compose: a fixed project name (`meeting-timer`), the image is set with `MEETING_TIMER_IMAGE`, and the logs
   are limited in size.
+- `.env.example`, a template for the non-committed `.env` read by docker compose.
