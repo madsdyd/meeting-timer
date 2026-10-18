@@ -100,6 +100,34 @@ client/             Statiske sider, ingen build-step
 - Ingen autentificering ud over de tilfældige tokens.
 - Ingen persistens — data er væk ved serverens genstart.
 
+## Docker
+
+```bash
+make image                  # byg et image fra arbejdskopien
+docker compose up -d        # kør det (meeting-timer:dev, eller MEETING_TIMER_IMAGE fra .env)
+```
+
+Containeren lytter kun på `127.0.0.1:3000` og er tænkt til at ligge bag en reverse proxy.
+
+## Releasing
+
+En version er dato og tidspunkt for buildet, f.eks. `2026-10-18-1530`. Den samme streng er tag på docker-imaget,
+git-tag på det commit, det er bygget fra, og den version serveren logger ved opstart.
+
+1. Ret [CHANGELOG.md](CHANGELOG.md): omdøb `## Unreleased` til datoen, f.eks. `## 2026-10-18`, og tilføj en ny, tom
+   `## Unreleased` over den. Commit.
+2. Kør `./release.sh` (eller `make release`). Den nægter at bygge, hvis der er ucommittede ændringer, eller hvis
+   tagget findes i forvejen. Den bygger `meeting-timer:<version>`, tagger commit'et og skriver kommandoen til at
+   pushe tagget. Den pusher aldrig selv.
+3. Sæt `MEETING_TIMER_IMAGE=meeting-timer:<version>` i `.env` og kør `docker compose up -d`.
+
+Koden til en kørende version: `git show <version>`; ændringerne siden sidste: `git log <forrige>..<version>`.
+
+## Licens
+
+EUPL-1.2, se [LICENSE](LICENSE). Licensen er angivet efter [REUSE](https://reuse.software)-specifikationen i
+`REUSE.toml`, så filerne har ingen licensheadere. Tjek med `reuse lint`.
+
 ## Baggrund
 
 Projektet tager udgangspunkt i en tidligere frontend-hjemmeopgave om en

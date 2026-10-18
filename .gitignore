@@ -1,2 +1,14 @@
+### Local data and secrets -- never commit
+/local/
+.env
+*~
+
+### Editors and IDEs
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+### Node (server)
 node_modules/
 *.log

@@ -9,6 +9,9 @@ RUN npm ci --omit=dev
 # --- runtime: minimal image, no build tools, no dev dependencies ---
 FROM node:24-alpine
 ENV NODE_ENV=production
+# The version, set by release.sh. Logged by the server at startup.
+ARG VERSION=dev
+ENV MEETING_TIMER_VERSION=${VERSION}
 
 WORKDIR /app
 COPY --from=deps --chown=node:node /app/server/node_modules ./server/node_modules

@@ -6,3 +6,10 @@ server.log
 .gitignore
 CLAUDE.md
 README.md
+CHANGELOG.md
+Makefile
+release.sh
+compose.yaml
+local
+tools
+.env

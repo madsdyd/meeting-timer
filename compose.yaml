@@ -1,6 +1,13 @@
+# Runs meeting-timer. The image is meeting-timer:<version>, built with release.sh; set it with MEETING_TIMER_IMAGE,
+# e.g. in .env (not committed). Without it, the image is built from the working tree.
+
+# A fixed project name keeps the container name (meeting-timer-meeting-timer-1) independent of the directory.
+name: meeting-timer
+
 services:
   meeting-timer:
     build: .
+    image: ${MEETING_TIMER_IMAGE:-meeting-timer:dev}
     restart: unless-stopped
     ports:
       - "127.0.0.1:3000:3000"
@@ -13,3 +20,8 @@ services:
       - ALL
     security_opt:
       - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"

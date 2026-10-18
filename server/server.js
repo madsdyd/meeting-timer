@@ -127,8 +127,10 @@ app.get('/api/qr', async (req, res) => {
 app.use(express.static(path.join(__dirname, '..', 'client')));
 
 const PORT = process.env.PORT || 3000;
+// The version, set by release.sh through the docker image.
+const VERSION = process.env.MEETING_TIMER_VERSION || 'dev';
 if (require.main === module) {
-  app.listen(PORT, () => console.log(`meeting-timer server listening on http://localhost:${PORT}`));
+  app.listen(PORT, () => console.log(`meeting-timer ${VERSION} listening on http://localhost:${PORT}`));
 }
 
 module.exports = app;
