@@ -128,9 +128,3 @@ Koden til en kørende version: `git show <version>`; ændringerne siden sidste: 
 EUPL-1.2, se [LICENSE](LICENSE). Licensen er angivet efter [REUSE](https://reuse.software)-specifikationen i
 `REUSE.toml`, så filerne har ingen licensheadere. Tjek med `reuse lint`.
 
-## Baggrund
-
-Projektet tager udgangspunkt i en tidligere frontend-hjemmeopgave om en
-"talerstol-timer", men datamodel og API er redesignet fra bunden for at
-understøtte flere samtidige møder med separate admin/viewer-links, live
-push via SSE og overtid.
