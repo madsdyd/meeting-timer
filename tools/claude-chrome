@@ -1,6 +1,8 @@
 #!/bin/bash
 
-PROFILE="/tmp/claude-chrome-profile"
+# A throwaway profile in the repository's git-ignored local/ directory, never the
+# real Chrome profile. Not in /tmp, which a nono sandbox may not let us read.
+PROFILE="${CLAUDE_CHROME_PROFILE:-$(cd "$(dirname "$0")/.." && pwd)/local/chrome-profile}"
 mkdir -p "$PROFILE"
 
 # Chrome's crash handler (crashpad) and its --disable-dev-shm-usage shared-memory
@@ -11,7 +13,13 @@ export XDG_CONFIG_HOME="$PROFILE"
 export XDG_CACHE_HOME="$PROFILE"
 export TMPDIR="$PROFILE"
 
+# Inside a nono sandbox (NONO_CAP_FILE is set), Chrome's own sandbox cannot start:
+# nono sets no_new_privs and forbids new namespaces. nono then is the sandbox.
+EXTRA_ARGS=()
+[ -n "$NONO_CAP_FILE" ] && EXTRA_ARGS+=(--no-sandbox)
+
 exec google-chrome \
+  "${EXTRA_ARGS[@]}" \
   --user-data-dir="$PROFILE" \
   --no-first-run \
   --no-default-browser-check \
