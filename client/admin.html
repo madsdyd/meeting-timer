@@ -40,7 +40,23 @@
         </div>
       </div>
       <div class="qr" id="viewer-qr" style="margin-top:16px;"></div>
+      <div class="button-row" style="margin-top:16px;">
+        <button type="button" id="btn-become-viewer">Brug denne skærm som visning</button>
+      </div>
     </section>
+
+    <details class="panel">
+      <summary>Styr fra en anden enhed</summary>
+      <p class="footer-note">Scan QR-koden med den enhed, der skal styre timeren, f.eks. din telefon. Den giver fuld
+        adgang til at styre - vis den kun for dirigenten. Skift derefter denne skærm til visning.</p>
+      <div class="link-box">
+        <span id="admin-link"></span>
+        <div class="link-box-actions">
+          <button type="button" class="icon-button" id="btn-share-admin"></button>
+        </div>
+      </div>
+      <div class="qr" id="admin-qr" style="margin-top:16px;"></div>
+    </details>
   </main>
 
   <p class="panel" id="error" hidden></p>
@@ -84,7 +100,17 @@
       document.getElementById('viewer-qr').innerHTML =
         `<img src="${qrCodeUrl(viewerUrl)}" alt="QR-kode til visningslink" />`;
 
-      setupShareButton(viewerUrl, initial.title);
+      setupShareButton(document.getElementById('btn-share-viewer'), viewerUrl, initial.title, 'visningslink');
+
+      const adminUrl = `${location.origin}/admin.html?token=${token}`;
+      document.getElementById('admin-link').textContent = adminUrl;
+      document.getElementById('admin-qr').innerHTML =
+        `<img src="${qrCodeUrl(adminUrl)}" alt="QR-kode til styringslink" />`;
+      setupShareButton(document.getElementById('btn-share-admin'), adminUrl, initial.title, 'styringslink');
+
+      // Replaces (rather than pushes) the history entry, so nobody at the
+      // display can go "back" to this page and take over the controls.
+      document.getElementById('btn-become-viewer').addEventListener('click', () => location.replace(viewerUrl));
 
       const display = createTimerDisplay(document.getElementById('timer-container'));
 
@@ -116,11 +142,10 @@
     const SHARE_ICON = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg>';
     const CHECK_ICON = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
 
-    function setupShareButton(url, title) {
-      const btn = document.getElementById('btn-share-viewer');
+    function setupShareButton(btn, url, title, linkName) {
       const canShare = typeof navigator.share === 'function';
 
-      const label = canShare ? 'Del visningslink' : 'Kopiér visningslink';
+      const label = canShare ? `Del ${linkName}` : `Kopiér ${linkName}`;
       btn.innerHTML = canShare ? SHARE_ICON : COPY_ICON;
       btn.setAttribute('aria-label', label);
       btn.title = label;

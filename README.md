@@ -33,6 +33,22 @@ npm test
    skrivebeskyttet.
 3. Alle åbne visninger opdateres automatisk, når dirigenten ændrer noget.
 
+Visningen holder skærmen tændt, så længe den er åben (kræver https eller
+localhost), og har en knap til fuldskærm, der vises de første 30 sekunder og
+i 5 sekunder, når man rører musen eller skærmen.
+
+### Kiosk: visning på den enhed, mødet er oprettet på
+
+Hvis mødet oprettes på den skærm, der skal vise timeren (f.eks. en tablet
+eller en laptop ved talerstolen), kan styringen flyttes til en telefon:
+
+1. Opret mødet på skærmen som normalt.
+2. Fold **Styr fra en anden enhed** ud på styringssiden, og scan QR-koden
+   med telefonen. Telefonen har nu styringssiden.
+3. Tryk **Brug denne skærm som visning** på skærmen, og derefter på
+   fuldskærmsknappen. Styringssiden erstattes i browserens historik, så man
+   ikke kan gå "tilbage" til den fra visningen.
+
 ## Designvalg og afgrænsninger
 
 - **In-memory, ingen database.** Alt data (møder, tokens) ligger i serverens

@@ -143,6 +143,9 @@ button.primary { background: var(--accent); color: #fff; border-color: var(--acc
 }
 .qr img { width: 100%; height: 100%; display: block; }
 
+details.panel > summary { cursor: pointer; font-size: 14px; font-weight: 720; }
+details.panel[open] > summary { margin-bottom: 12px; }
+
 /* --- Timer display, shared between admin + view --- */
 
 .timer {
@@ -178,6 +181,16 @@ body:has(.page--viewer) { justify-content: center; padding: 0; }
   width: min(94vw, 84vh);
   height: min(94vw, 84vh);
 }
+
+/* Floats over the viewer and fades out when idle. While hidden it ignores
+   clicks, so a stray tap in the corner only brings it back. */
+.fullscreen-button {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  transition: opacity 0.4s ease;
+}
+.fullscreen-button.is-idle { opacity: 0; pointer-events: none; }
 
 .timer.is-warning .timer-shape { --fill: var(--warning); animation: pulse 1s ease-in-out infinite; }
 .timer.is-overtime .timer-shape { --fill: var(--danger); animation: alarm 0.5s ease-in-out infinite; }
