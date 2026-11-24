@@ -5,6 +5,8 @@ also the tag of the docker image and the git tag. See "Releasing" in [README.md]
 
 ## Unreleased
 
+## 2026-11-24
+
 - Kiosk use: the control page can show a QR code for its own link ("Styr fra en anden enhed"), so control can move
   to a phone while the device the meeting was created on becomes the display ("Brug denne skærm som visning").
 - The view keeps the screen on while it is open (Screen Wake Lock, needs https) and has a fullscreen button that
