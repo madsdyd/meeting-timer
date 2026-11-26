@@ -10,7 +10,7 @@
   <main class="page">
     <div>
       <h1>Talerstol Timer</h1>
-      <p>Opret et nyt møde/punkt og få et styringslink (til dirigenten) og et visningslink (til talere og tilhørere).</p>
+      <p>Opret et nyt møde/punkt, og vælg om denne enhed skal styre timeren eller vise den for salen.</p>
     </div>
 
     <form class="panel" id="create-form">
@@ -20,8 +20,17 @@
       <label>Taletid (min:sek)</label>
       <div id="duration"></div>
 
-      <div class="button-row" style="margin-top:16px;">
-        <button type="submit" class="primary">Opret møde</button>
+      <label>Hvad skal denne enhed bruges til?</label>
+      <!-- Enter in a field submits with the first button, the classic flow. -->
+      <div class="choices">
+        <div class="choice">
+          <button type="submit" class="primary" value="styring">Opret og styr herfra</button>
+          <p>Du styrer timeren fra denne enhed og deler visningen med talere og tilhørere.</p>
+        </div>
+        <div class="choice">
+          <button type="submit" class="primary" value="visning">Opret og vis på denne skærm</button>
+          <p>Skærmen viser timeren i salen. Du styrer den fra din telefon via en QR-kode.</p>
+        </div>
       </div>
     </form>
   </main>
@@ -40,7 +49,8 @@
 
       const { adminToken } = await createMeeting({ title, duration });
 
-      location.href = `${location.origin}/admin.html?token=${adminToken}`;
+      const setup = event.submitter && event.submitter.value === 'visning' ? '&setup=visning' : '';
+      location.href = `${location.origin}/admin.html?token=${adminToken}${setup}`;
     });
   </script>
 </body>

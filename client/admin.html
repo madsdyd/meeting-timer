@@ -59,13 +59,39 @@
     </details>
   </main>
 
+  <!-- Shown instead of the controls when the meeting was created to be shown
+       on this screen (setup=visning): hand the controls to a phone, then
+       switch to the view. -->
+  <main class="page" id="setup" hidden>
+    <div>
+      <div class="meta-title">Forbind din telefon</div>
+      <p class="footer-note" id="setup-meeting-title"></p>
+    </div>
+
+    <section class="panel">
+      <ol class="steps">
+        <li>Scan QR-koden med din telefon. Den bliver til styringen af timeren.</li>
+        <li>Tryk på <strong>Start visning</strong>.</li>
+      </ol>
+      <div class="qr qr--large" id="setup-qr"></div>
+      <div class="button-row button-row--center">
+        <button type="button" class="primary" id="btn-start-viewer">Start visning</button>
+        <button type="button" class="icon-button" id="btn-share-setup"></button>
+      </div>
+      <p class="footer-note">Skærmen kan ikke gå tilbage til styringen, når visningen er startet. Mister telefonen
+        styringslinket, kan du dele det fra telefonens styringsside under <strong>Styr fra en anden enhed</strong>.</p>
+    </section>
+  </main>
+
   <p class="panel" id="error" hidden></p>
 
   <script src="js/api.js"></script>
   <script src="js/duration.js"></script>
   <script src="js/timerDisplay.js"></script>
+  <script src="js/viewer.js"></script>
   <script>
-    const token = new URLSearchParams(location.search).get('token');
+    const params = new URLSearchParams(location.search);
+    const token = params.get('token');
     const errorEl = document.getElementById('error');
 
     function fail(message) {
@@ -90,6 +116,12 @@
         return fail('Dette link giver ikke adgang til at styre timeren.');
       }
 
+      const adminUrl = `${location.origin}/admin.html?token=${token}`;
+
+      if (params.get('setup') === 'visning') {
+        return initSetup(initial, adminUrl);
+      }
+
       document.getElementById('app').hidden = false;
       document.getElementById('meeting-title').textContent = initial.title;
       const durationInput = createDurationInput(document.getElementById('duration'), { seconds: initial.duration });
@@ -102,24 +134,25 @@
 
       setupShareButton(document.getElementById('btn-share-viewer'), viewerUrl, initial.title, 'visningslink');
 
-      const adminUrl = `${location.origin}/admin.html?token=${token}`;
       document.getElementById('admin-link').textContent = adminUrl;
       document.getElementById('admin-qr').innerHTML =
         `<img src="${qrCodeUrl(adminUrl)}" alt="QR-kode til styringslink" />`;
       setupShareButton(document.getElementById('btn-share-admin'), adminUrl, initial.title, 'styringslink');
-
-      // Replaces (rather than pushes) the history entry, so nobody at the
-      // display can go "back" to this page and take over the controls.
-      document.getElementById('btn-become-viewer').addEventListener('click', () => location.replace(viewerUrl));
 
       const display = createTimerDisplay(document.getElementById('timer-container'));
 
       let latest = initial;
       display.update(latest);
 
-      subscribeToMeeting(token, (state) => {
+      const unsubscribe = subscribeToMeeting(token, (state) => {
         latest = state;
         display.update(state);
+      });
+
+      document.getElementById('btn-become-viewer').addEventListener('click', () => {
+        unsubscribe();
+        display.destroy();
+        switchToViewer(initial.viewerToken);
       });
 
       document.getElementById('btn-start').addEventListener('click', () => startMeeting(token).catch(showApiError));
@@ -129,6 +162,15 @@
       document.getElementById('btn-adjust').addEventListener('click', () => {
         adjustMeeting(token, durationInput.getSeconds()).catch(showApiError);
       });
+    }
+
+    function initSetup(initial, adminUrl) {
+      document.getElementById('setup').hidden = false;
+      document.getElementById('setup-meeting-title').textContent = initial.title;
+      document.getElementById('setup-qr').innerHTML =
+        `<img src="${qrCodeUrl(adminUrl)}" alt="QR-kode til styringslink" />`;
+      setupShareButton(document.getElementById('btn-share-setup'), adminUrl, initial.title, 'styringslink');
+      document.getElementById('btn-start-viewer').addEventListener('click', () => switchToViewer(initial.viewerToken));
     }
 
     function showApiError(err) {

@@ -25,9 +25,10 @@ npm test
 ## Sådan bruges den
 
 1. Gå til `/` og opret et møde/punkt med en titel (valgfri) og en varighed i
-   min:sek-format (f.eks. `01:30`). Du bliver sendt direkte videre til
-   **styringssiden** (`/admin.html?token=...`) – hold dette link privat, det
-   er her dirigenten starter, pauser, nulstiller og justerer tiden.
+   min:sek-format (f.eks. `01:30`), og tryk på **Opret og styr herfra**. Du
+   bliver sendt direkte videre til **styringssiden** (`/admin.html?token=...`)
+   – hold dette link privat, det er her dirigenten starter, pauser, nulstiller
+   og justerer tiden.
 2. Styringssiden viser også **visningslinket** (`/view.html?token=...`) og en
    QR-kode til det – del det frit, f.eks. til talere/tilhørere. Det er
    skrivebeskyttet.
@@ -37,17 +38,23 @@ Visningen holder skærmen tændt, så længe den er åben (kræver https eller
 localhost), og har en knap til fuldskærm, der vises de første 30 sekunder og
 i 5 sekunder, når man rører musen eller skærmen.
 
-### Kiosk: visning på den enhed, mødet er oprettet på
+### Visning på den enhed, mødet er oprettet på
 
 Hvis mødet oprettes på den skærm, der skal vise timeren (f.eks. en tablet
-eller en laptop ved talerstolen), kan styringen flyttes til en telefon:
+eller en laptop ved talerstolen), styres det fra en telefon:
 
-1. Opret mødet på skærmen som normalt.
-2. Fold **Styr fra en anden enhed** ud på styringssiden, og scan QR-koden
-   med telefonen. Telefonen har nu styringssiden.
-3. Tryk **Brug denne skærm som visning** på skærmen, og derefter på
-   fuldskærmsknappen. Styringssiden erstattes i browserens historik, så man
-   ikke kan gå "tilbage" til den fra visningen.
+1. Opret mødet på skærmen med **Opret og vis på denne skærm**. Skærmen
+   viser **Forbind din telefon** med en stor QR-kode til styringslinket
+   (`/admin.html?token=...&setup=visning`).
+2. Scan QR-koden med telefonen. Telefonen har nu styringssiden.
+3. Tryk **Start visning** på skærmen. Den skifter til visningen og går i
+   fuldskærm, hvor browseren kan. Adressen og historikken skiftes til
+   visningslinket, så man ikke kan gå "tilbage" til styringen fra visningen,
+   og en genindlæsning viser bare visningen.
+
+Har man valgt **Opret og styr herfra** og vil skifte, findes det samme på
+styringssiden: **Styr fra en anden enhed** viser QR-koden, og **Brug denne
+skærm som visning** skifter til visningen.
 
 ## Designvalg og afgrænsninger
 
@@ -99,6 +106,7 @@ client/             Statiske sider, ingen build-step
   admin.html         Dirigentens styringsside
   view.html          Skrivebeskyttet visning
   js/api.js          Wrapper omkring REST + SSE
+  js/viewer.js       Visningen; bruges af view.html og når admin.html skifter til visning
   js/timerDisplay.js Delt render-logik for nedtælling/cirkel-animation
   css/style.css
 ```

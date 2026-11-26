@@ -50,6 +50,7 @@ function qrCodeUrl(targetUrl) {
 // natively on a drop; when the page becomes visible again (e.g. after the
 // device slept, which may also pause performance.now()) the connection is
 // reopened at once, so the countdown is re-anchored without waiting.
+// Returns a function that ends the subscription.
 function subscribeToMeeting(token, onState) {
   let source = null;
 
@@ -61,8 +62,15 @@ function subscribeToMeeting(token, onState) {
     });
   }
 
-  connect();
-  document.addEventListener('visibilitychange', () => {
+  function onVisibilityChange() {
     if (document.visibilityState === 'visible') connect();
-  });
+  }
+
+  connect();
+  document.addEventListener('visibilitychange', onVisibilityChange);
+
+  return () => {
+    document.removeEventListener('visibilitychange', onVisibilityChange);
+    source.close();
+  };
 }

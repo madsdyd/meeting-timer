@@ -5,6 +5,12 @@ also the tag of the docker image and the git tag. See "Releasing" in [README.md]
 
 ## Unreleased
 
+- The front page asks what this device is for: "Opret og styr herfra" (as before) or "Opret og vis på denne skærm".
+  The latter shows "Forbind din telefon" with a large QR code for the control link and a "Start visning" button,
+  which switches the screen to the view and fullscreen in one tap. "Brug denne skærm som visning" on the control page
+  now also goes fullscreen.
+- Fixed: elements meant to be hidden were shown, e.g. the empty control page while loading.
+
 ## 2026-11-24
 
 - Kiosk use: the control page can show a QR code for its own link ("Styr fra en anden enhed"), so control can move
