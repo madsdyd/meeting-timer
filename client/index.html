@@ -10,7 +10,7 @@
   <main class="page">
     <div>
       <h1>Talerstol Timer</h1>
-      <p>Opret et nyt møde/punkt, og vælg om denne enhed skal styre timeren eller vise den for salen.</p>
+      <p>Opret et nyt møde/punkt, og vælg om denne enhed skal vise timeren for salen eller styre den.</p>
     </div>
 
     <form class="panel" id="create-form">
@@ -21,18 +21,21 @@
       <div id="duration"></div>
 
       <label>Hvad skal denne enhed bruges til?</label>
-      <!-- Enter in a field submits with the first button, the classic flow. -->
+      <!-- Enter in a field submits with the first button: showing the timer on
+           this screen, the way the guide (vejledning.html) starts. -->
       <div class="choices">
-        <div class="choice">
-          <button type="submit" class="primary" value="styring">Opret og styr herfra</button>
-          <p>Du styrer timeren fra denne enhed og deler visningen med talere og tilhørere.</p>
-        </div>
         <div class="choice">
           <button type="submit" class="primary" value="visning">Opret og vis på denne skærm</button>
           <p>Skærmen viser timeren i salen. Du styrer den fra din telefon via en QR-kode.</p>
         </div>
+        <div class="choice">
+          <button type="submit" class="primary" value="styring">Opret og styr herfra</button>
+          <p>Du styrer timeren fra denne enhed og deler visningen med talere og tilhørere.</p>
+        </div>
       </div>
     </form>
+
+    <p class="footer-note"><a href="vejledning.html">Vejledning: sådan bruger du taletidssystemet</a></p>
   </main>
 
   <script src="js/api.js"></script>

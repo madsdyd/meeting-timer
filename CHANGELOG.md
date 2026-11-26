@@ -5,6 +5,11 @@ also the tag of the docker image and the git tag. See "Releasing" in [README.md]
 
 ## Unreleased
 
+- A short guide for users at `/vejledning.html`, linked from the front page, that prints on one A4 page.
+  `tools/vejledning-billeder` takes its screenshots again.
+- "Opret og vis på denne skærm" now comes first on the front page and is what Enter in a field does, matching the
+  guide. "Opret og styr herfra" comes second.
+
 ## 2026-11-26
 
 - The front page asks what this device is for: "Opret og styr herfra" (as before) or "Opret og vis på denne skærm".

@@ -56,6 +56,18 @@ Har man valgt **Opret og styr herfra** og vil skifte, findes det samme på
 styringssiden: **Styr fra en anden enhed** viser QR-koden, og **Brug denne
 skærm som visning** skifter til visningen.
 
+### Vejledning
+
+`/vejledning.html` er en kort vejledning til brugerne, linket fra forsiden. Den fylder én A4-side, når den
+udskrives fra browseren. Skærmbillederne i `client/img/` tages med:
+
+```bash
+./tools/vejledning-billeder
+```
+
+Scriptet starter sin egen server (port 3199) og headless Chrome via `tools/claude-chrome` (port 9334), så det ikke
+forstyrrer en server, der allerede kører. Kør det igen, når brugerfladen ændrer sig, og tjek udskriften.
+
 ## Designvalg og afgrænsninger
 
 - **In-memory, ingen database.** Alt data (møder, tokens) ligger i serverens
@@ -105,6 +117,8 @@ client/             Statiske sider, ingen build-step
   index.html        Opret nyt møde
   admin.html         Dirigentens styringsside
   view.html          Skrivebeskyttet visning
+  vejledning.html    Kort vejledning til brugerne, én A4-side i print
+  img/               Skærmbilleder til vejledningen (tools/vejledning-billeder)
   js/api.js          Wrapper omkring REST + SSE
   js/viewer.js       Visningen; bruges af view.html og når admin.html skifter til visning
   js/timerDisplay.js Delt render-logik for nedtælling/cirkel-animation

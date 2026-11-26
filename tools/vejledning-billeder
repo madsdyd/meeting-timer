@@ -1,0 +1,29 @@
+#!/bin/bash
+# Takes the screenshots for the guide (client/vejledning.html) again, into
+# client/img/. Starts its own server and headless Chrome (via claude-chrome) on
+# their own ports, so it does not disturb a server already running on 3000.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+SERVER_PORT="${SERVER_PORT:-3199}"
+CHROME_PORT="${CHROME_PORT:-9334}"
+
+cleanup() {
+  [ -n "${CHROME_PID:-}" ] && kill "$CHROME_PID" 2>/dev/null || true
+  [ -n "${SERVER_PID:-}" ] && kill "$SERVER_PID" 2>/dev/null || true
+}
+trap cleanup EXIT
+
+(cd "$ROOT/server" && PORT="$SERVER_PORT" exec node server.js >/dev/null) &
+SERVER_PID=$!
+
+"$ROOT/tools/claude-chrome" --headless=new --disable-gpu --remote-debugging-port="$CHROME_PORT" about:blank \
+  >/dev/null 2>&1 &
+CHROME_PID=$!
+
+for _ in $(seq 50); do
+  curl -sf "http://localhost:$SERVER_PORT/" >/dev/null && curl -sf "http://localhost:$CHROME_PORT/json/version" >/dev/null && break
+  sleep 0.2
+done
+
+node "$ROOT/tools/vejledning-billeder.mjs" "http://localhost:$SERVER_PORT" "http://localhost:$CHROME_PORT" "$ROOT/client/img"

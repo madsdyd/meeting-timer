@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="da">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vejledning - Talerstol Timer</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <!-- A quick guide that fits one A4 page when printed (see @media print in
+       style.css). The screenshots in img/ are taken by tools/vejledning-billeder. -->
+  <main class="page page--guide">
+    <div class="guide-actions no-print">
+      <a href="/">Til forsiden</a>
+      <button type="button" id="btn-print">Udskriv</button>
+    </div>
+
+    <h1>Hvordan man bruger taletidssystemet</h1>
+    <p>Taletidssystemet viser en nedtælling for talerne i salen, mens ordstyreren styrer den fra sin mobiltelefon.
+      For at starte op skal du have:</p>
+    <ul>
+      <li>en <strong>laptop eller tablet</strong>, der viser taletiden for salen, og</li>
+      <li>en <strong>mobiltelefon</strong>, der styrer den.</li>
+    </ul>
+    <p>Begge skal være på internettet.</p>
+
+    <h2>Sådan starter du</h2>
+    <ol>
+      <li>På laptoppen eller tabletten: gå til <strong class="js-host">taletid.challenge.dk</strong>. Skriv eventuelt
+        en titel, og sæt taletiden (min:sek).</li>
+      <li>Tryk på <strong>Opret og vis på denne skærm</strong>. Skærmen viser nu “Forbind din telefon” med en stor
+        QR-kode.</li>
+      <li>Scan QR-koden med mobilens kamera, og åbn linket. Mobilen viser nu styringen.</li>
+      <li>Tryk på <strong>Start visning</strong> på laptoppen eller tabletten. Den viser taletiden i fuldskærm.</li>
+    </ol>
+
+    <div class="guide-shots">
+      <figure>
+        <img src="img/vejledning-1-opret.png" alt="Forsiden med titel, taletid og knappen Opret og vis på denne skærm" />
+        <figcaption><span>1</span>Opret på laptoppen</figcaption>
+      </figure>
+      <figure>
+        <div class="guide-shot-example">
+          <img src="img/vejledning-2-forbind.png" alt="Siden Forbind din telefon med QR-kode og knappen Start visning" />
+          <div class="guide-stamp" aria-hidden="true">Eksempel</div>
+        </div>
+        <figcaption><span>2</span>Scan QR-koden med mobilen</figcaption>
+      </figure>
+      <figure>
+        <img src="img/vejledning-3-styr.png" alt="Styringen på mobilen med knapperne Start, Pause, Nulstil, Genstart og Sæt tid" />
+        <figcaption><span>3</span>Styr fra mobilen</figcaption>
+      </figure>
+    </div>
+
+    <h2>Sådan styrer du fra mobilen</h2>
+    <table>
+      <thead>
+        <tr><th>Knap</th><th>Hvad den gør</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Start</strong></td><td>Starter nedtællingen.</td></tr>
+        <tr><td><strong>Pause</strong></td><td>Stopper nedtællingen. Tryk Start for at fortsætte.</td></tr>
+        <tr><td><strong>Nulstil</strong></td><td>Sætter tiden tilbage til hele taletiden, på pause.</td></tr>
+        <tr><td><strong>Genstart</strong></td><td>Nulstiller og starter med det samme. Brug den, når næste taler går på.</td></tr>
+        <tr><td><strong>Sæt tid</strong></td><td>Giver en ny taletid. Vælg den med ▲ ▼ (10 sekunder ad gangen), eller
+          skriv den, og tryk Sæt tid. Timeren nulstilles og sættes på pause.</td></tr>
+      </tbody>
+    </table>
+    <p>Cirklen er grøn, mens der er tid. De sidste 10 sekunder pulserer den i magenta. I overtid blinker den rødt og
+      tæller videre i minus.</p>
+
+    <h2>Del styringen med en anden</h2>
+    <p>Nederst på mobilens styringsside kan du folde <strong>Styr fra en anden enhed</strong> ud. Derfra kan en anden
+      få styringen på to måder:</p>
+    <ul>
+      <li><strong>QR-kode:</strong> den anden scanner koden direkte fra din mobil.</li>
+      <li><strong>Del-knappen:</strong> send linket i en mail, SMS eller besked.</li>
+    </ul>
+    <p>Alle med linket kan styre taletiden, så del det kun med dem, der skal styre. Talere og tilhørere kan i stedet få
+      <strong>visningslinket</strong>, som kun viser taletiden.</p>
+
+    <h2>Gode råd</h2>
+    <ul>
+      <li><strong>Dvale:</strong> du behøver ikke ændre indstillinger. Skærmen holdes tændt, så længe taletiden vises.
+        Lad låget være åbent, sæt laptoppen til strøm, og skift ikke til andre programmer.</li>
+      <li><strong>Fuldskærm:</strong> rør musen eller skærmen, så kommer knappen frem øverst til højre.</li>
+      <li><strong>Gem styringslinket:</strong> laptoppen kan ikke vende tilbage til styringen. Lukker du fanen på
+        mobilen, er styringen væk. Del linket med dig selv fra start, eller opret et nyt møde.</li>
+    </ul>
+  </main>
+
+  <script>
+    // The guide names the address it is served from, so it fits any installation.
+    for (const el of document.querySelectorAll('.js-host')) el.textContent = location.host;
+    document.getElementById('btn-print').addEventListener('click', () => window.print());
+  </script>
+</body>
+</html>

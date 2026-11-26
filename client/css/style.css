@@ -260,3 +260,87 @@ body:has(.page--viewer) { justify-content: center; padding: 0; }
 }
 
 .footer-note { font-size: 13px; color: var(--muted); text-align: center; }
+
+/* --- Guide (vejledning.html): readable on screen, one A4 page in print --- */
+
+.page--guide { max-width: 860px; gap: 0; line-height: 1.45; }
+.page--guide h1 { font-size: clamp(26px, 5vw, 36px); line-height: 1.15; }
+.page--guide h2 { margin-top: 18px; font-size: 20px; }
+.page--guide p, .page--guide li, .page--guide td { color: var(--ink); }
+.page--guide p { margin: 6px 0; }
+.page--guide ul, .page--guide ol { margin: 6px 0; padding-left: 1.4em; }
+
+.guide-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+
+/* Columns sized by each screenshot's aspect ratio, so all three come out
+   the same height. */
+.guide-shots {
+  display: grid;
+  grid-template-columns: 1.13fr 0.83fr 0.54fr;
+  gap: 16px;
+  margin: 12px 0 4px;
+}
+.guide-shots figure { margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.guide-shots img { width: 100%; display: block; border: 1px solid var(--line); border-radius: 10px; }
+.guide-shots figcaption { font-weight: 720; font-size: 14px; }
+.guide-shots figcaption span {
+  display: inline-block;
+  width: 1.5em;
+  height: 1.5em;
+  line-height: 1.5em;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  text-align: center;
+  margin-right: 6px;
+}
+
+/* The QR code in the screenshot points at a test server: a band across it
+   keeps people from scanning it off the page or the printout. */
+.guide-shot-example { position: relative; overflow: hidden; border-radius: 10px; }
+.guide-stamp {
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  top: 44%;
+  transform: rotate(-12deg);
+  background: rgba(var(--rv-magenta-rgb), .88);
+  color: #fff;
+  font-weight: 800;
+  font-size: clamp(12px, 2.6vw, 22px);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  text-align: center;
+  padding: .3em 0;
+}
+
+/* On a phone the three side by side get too small to read: stack them. */
+@media (max-width: 600px) {
+  .guide-shots { grid-template-columns: 1fr; gap: 20px; }
+  .guide-shots img { width: auto; max-width: 100%; max-height: 380px; }
+  .guide-shot-example { width: fit-content; max-width: 100%; }
+}
+
+.page--guide table { width: 100%; border-collapse: collapse; margin: 6px 0; font-size: 15px; }
+.page--guide th, .page--guide td { text-align: left; vertical-align: top; padding: 5px 8px; border-bottom: 1px solid var(--line); }
+.page--guide th { font-weight: 720; background: var(--soft); }
+.page--guide td:first-child { white-space: nowrap; }
+
+@media print {
+  @page { size: A4; margin: 12mm; }
+  body { background: none; padding: 0; display: block; min-height: 0; }
+  .no-print { display: none !important; }
+  .page--guide { max-width: none; font-size: 10pt; line-height: 1.35; }
+  .page--guide h1 { font-size: 19pt; margin-bottom: 4px; }
+  .page--guide h2 { font-size: 12.5pt; margin: 8px 0 2px; }
+  .page--guide p, .page--guide ul, .page--guide ol { margin: 3px 0; }
+  .page--guide table { font-size: 9.5pt; margin: 3px 0; }
+  .page--guide th, .page--guide td { padding: 2px 6px; }
+  .page--guide th { background: none; }
+  /* Narrower than the text column, so the screenshots leave room for the rest. */
+  .guide-shots { width: 72%; margin: 6px auto 2px; gap: 12px; }
+  .guide-shots figcaption { font-size: 9pt; }
+  .guide-stamp { font-size: 11pt; }
+  .page--guide h2 { break-after: avoid; }
+  .guide-shots, .page--guide tr { break-inside: avoid; }
+}
