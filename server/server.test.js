@@ -297,6 +297,25 @@ test('responses carry the security headers and no X-Powered-By', async () => {
   });
 });
 
+test('every page links the favicons, and they are served', async () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const dir = path.join(__dirname, '..', 'client');
+  for (const page of fs.readdirSync(dir).filter((f) => f.endsWith('.html'))) {
+    const html = fs.readFileSync(path.join(dir, page), 'utf8');
+    for (const icon of ['favicon.svg', 'favicon.ico', 'apple-touch-icon.png']) {
+      assert.match(html, new RegExp(`href="${icon.replace('.', '\\.')}"`), `${page}: ${icon}`);
+    }
+  }
+  await withServer(async (base) => {
+    for (const [icon, type] of [['favicon.svg', 'image/svg+xml'], ['favicon.ico', 'image/'], ['apple-touch-icon.png', 'image/png']]) {
+      const res = await fetch(`${base}/${icon}`);
+      assert.equal(res.status, 200, icon);
+      assert.ok(res.headers.get('content-type').startsWith(type), icon);
+    }
+  });
+});
+
 test('the pages have no inline scripts or style attributes, which the CSP would block', () => {
   const fs = require('node:fs');
   const path = require('node:path');

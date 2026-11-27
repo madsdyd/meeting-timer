@@ -14,6 +14,8 @@ also the tag of the docker image and the git tag. See "Releasing" in [README.md]
 - Security headers: a Content-Security-Policy that allows only the app's own files and no embedding in other sites,
   `X-Content-Type-Options: nosniff` and `Referrer-Policy: no-referrer`; no more `X-Powered-By`. The pages' inline
   scripts and styles moved to `client/js/` and `style.css`.
+- A favicon: the timer's disc, three quarters green. Also as `favicon.ico` and an iOS home screen icon, made from the
+  SVG by `tools/favicon`.
 
 ## 2026-11-26
 

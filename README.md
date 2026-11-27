@@ -130,6 +130,7 @@ client/             Statiske sider, ingen build-step
   view.html          Skrivebeskyttet visning
   vejledning.html    Kort vejledning til brugerne, én A4-side i print
   img/               Skærmbilleder til vejledningen (tools/vejledning-billeder)
+  favicon.svg        Ikonet: timerens skive; favicon.ico og apple-touch-icon.png laves af tools/favicon
   js/api.js          Wrapper omkring REST + SSE
   js/viewer.js       Visningen; bruges af view.html og når admin.html skifter til visning
   js/create.js, js/admin.js, js/view.js, js/vejledning.js

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- The timer's own shape: the disc filled green from 12 o'clock, clockwise, with a quarter of the time left. -->
+  <circle cx="16" cy="16" r="15" fill="#dedede"/>
+  <path d="M16 16V1A15 15 0 1 1 1 16Z" fill="#009540"/>
+</svg>

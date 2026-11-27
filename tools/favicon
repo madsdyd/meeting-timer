@@ -1,0 +1,17 @@
+#!/bin/bash
+# Makes client/favicon.ico and client/apple-touch-icon.png from client/favicon.svg.
+# Needs rsvg-convert and ImageMagick (apt install librsvg2-bin imagemagick).
+set -euo pipefail
+cd "$(dirname "$0")/../client"
+tmp=$(mktemp -d "${TMPDIR:-/tmp}/favicon.XXXXXX")
+trap 'rm -rf "$tmp"' EXIT
+
+for size in 16 32 48; do
+  rsvg-convert -w "$size" -h "$size" favicon.svg -o "$tmp/$size.png"
+done
+magick "$tmp/16.png" "$tmp/32.png" "$tmp/48.png" favicon.ico
+
+# iOS fills transparency with black and rounds the corners itself, so the
+# home screen icon gets a white background and some margin.
+rsvg-convert -w 140 -h 140 favicon.svg -o "$tmp/140.png"
+magick "$tmp/140.png" -background white -gravity center -extent 180x180 -alpha remove apple-touch-icon.png
