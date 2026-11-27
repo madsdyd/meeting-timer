@@ -14,6 +14,7 @@ function withServer(fn) {
         reject(err);
       } finally {
         server.close();
+        server.closeAllConnections(); // also idle keep-alive ones, which would delay the exit
       }
     });
   });
@@ -215,4 +216,69 @@ test('idle meetings expire, but not while a client is connected', async () => {
     }
     assert.equal(store.resolveToken(watched.viewerToken), null);
   });
+});
+
+test('when the store is full, a new meeting replaces the longest idle one without views', async () => {
+  const store = require('./meetingStore');
+  store.expireIdleMeetings(Infinity); // start from an empty store
+  const created = [];
+  for (let i = 0; i < store.MAX_MEETINGS; i++) created.push(store.createMeeting({ duration: 60 }));
+  const [oldest, inUse] = created;
+  inUse.lastActivityMono = oldest.lastActivityMono - 1; // idle the longest, but has a view open
+  for (const meeting of created.slice(2)) store.touch(meeting);
+
+  const isInUse = (meetingId) => meetingId === inUse.id;
+  const newest = store.createMeeting({ duration: 60 }, isInUse);
+  assert.ok(newest);
+  assert.equal(store.resolveToken(oldest.adminToken), null, 'the longest idle meeting without views is replaced');
+  assert.ok(store.resolveToken(inUse.adminToken), 'a meeting with a view open is kept');
+  assert.ok(store.resolveToken(newest.adminToken));
+
+  assert.equal(store.createMeeting({ duration: 60 }, () => true), null, 'all meetings in use: nothing is created');
+  store.expireIdleMeetings(Infinity);
+});
+
+test('a meeting has at most MAX_VIEWS_PER_MEETING streams; a new one closes the oldest', async () => {
+  await withServer(async (base) => {
+    const { viewerToken } = (await postJson(`${base}/api/meetings`, { duration: 60 })).body;
+    const controller = new AbortController();
+    const open = async () => {
+      const res = await fetch(`${base}/api/meetings/${viewerToken}/events`, { signal: controller.signal });
+      const reader = res.body.getReader();
+      await reader.read(); // the initial snapshot
+      return reader;
+    };
+    const readers = [];
+    for (let i = 0; i < app.MAX_VIEWS_PER_MEETING; i++) readers.push(await open());
+    readers.push(await open());
+
+    assert.equal((await readers[0].read()).done, true, 'the oldest stream is closed');
+    const stillOpen = await Promise.race([
+      readers[1].read().then(() => false),
+      new Promise((resolve) => setTimeout(() => resolve(true), 100)),
+    ]);
+    assert.ok(stillOpen, 'the other streams stay open');
+    controller.abort();
+  });
+});
+
+test('creating a meeting fails with 503 when every meeting is in use', async () => {
+  const store = require('./meetingStore');
+  store.expireIdleMeetings(Infinity);
+  await withServer(async (base) => {
+    const controller = new AbortController();
+    for (let i = 0; i < store.MAX_MEETINGS; i++) {
+      const { viewerToken } = (await postJson(`${base}/api/meetings`, { duration: 60 })).body;
+      const res = await fetch(`${base}/api/meetings/${viewerToken}/events`, { signal: controller.signal });
+      await res.body.getReader().read();
+    }
+    const refused = await postJson(`${base}/api/meetings`, { duration: 60 });
+    assert.equal(refused.status, 503);
+    assert.equal(refused.body.error, 'too-many-meetings');
+    controller.abort();
+  });
+  // The streams close asynchronously; once they have, the meetings can go.
+  for (let i = 0; i < 100 && store.expireIdleMeetings(Infinity).length === 0; i++) {
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
 });

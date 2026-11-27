@@ -37,11 +37,34 @@ function normalizeTitle(title) {
 // don't pile up in memory until the next restart.
 const MEETING_TTL_MS = 24 * 60 * 60 * 1000;
 
+// At most this many meetings exist at once; a new one replaces the longest
+// idle meeting that isn't in use (see createMeeting()).
+const MAX_MEETINGS = 100;
+
 function makeToken() {
   return crypto.randomBytes(9).toString('base64url'); // 12 url-safe chars
 }
 
-function createMeeting({ title, duration }) {
+function deleteMeeting(meeting) {
+  meetings.delete(meeting.id);
+  tokenIndex.delete(meeting.adminToken);
+  tokenIndex.delete(meeting.viewerToken);
+}
+
+// Creates a meeting. When there are MAX_MEETINGS already, the longest idle one
+// for which `isInUse(meetingId)` is false is deleted first; if every meeting
+// is in use, nothing is created and null is returned.
+function createMeeting({ title, duration }, isInUse = () => false) {
+  if (meetings.size >= MAX_MEETINGS) {
+    let idlest = null;
+    for (const meeting of meetings.values()) {
+      if (isInUse(meeting.id)) continue;
+      if (!idlest || meeting.lastActivityMono < idlest.lastActivityMono) idlest = meeting;
+    }
+    if (!idlest) return null;
+    deleteMeeting(idlest);
+  }
+
   const id = crypto.randomUUID();
   const adminToken = makeToken();
   const viewerToken = makeToken();
@@ -87,9 +110,7 @@ function expireIdleMeetings(now = performance.now(), isInUse = () => false) {
   const expired = [];
   for (const meeting of meetings.values()) {
     if (now - meeting.lastActivityMono <= MEETING_TTL_MS || isInUse(meeting.id)) continue;
-    meetings.delete(meeting.id);
-    tokenIndex.delete(meeting.adminToken);
-    tokenIndex.delete(meeting.viewerToken);
+    deleteMeeting(meeting);
     expired.push(meeting.id);
   }
   return expired;
@@ -180,6 +201,7 @@ module.exports = {
   MAX_TITLE_LENGTH,
   normalizeTitle,
   MEETING_TTL_MS,
+  MAX_MEETINGS,
   touch,
   expireIdleMeetings,
   createMeeting,

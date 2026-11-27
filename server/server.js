@@ -18,8 +18,17 @@ app.use(express.json({ limit: '1kb' }));
 // proxies from closing the idle connection.
 app.set('heartbeatMs', 10000);
 
-// meetingId -> Set of { res, role }, used to push SSE updates to open clients.
+// meetingId -> Set of { res, role, close }, used to push SSE updates to open
+// clients. A Set keeps insertion order, so its first entry is the oldest.
 const subscribers = new Map();
+
+// A meeting is shown on a handful of screens. When one more connects, the
+// oldest stream is closed rather than the new one refused: the oldest is the
+// likeliest to be a dead connection from a device that went to sleep, and a
+// live one reconnects on its own (EventSource does that when a stream ends).
+const MAX_VIEWS_PER_MEETING = 10;
+
+const isInUse = (meetingId) => subscribers.has(meetingId);
 
 function sendState(res, meeting, role) {
   res.write(`event: state\ndata: ${JSON.stringify(store.toPublicState(meeting, role))}\n\n`);
@@ -62,7 +71,10 @@ app.post('/api/meetings', (req, res) => {
   if (title === null) {
     return res.status(400).json({ error: 'invalid-title' });
   }
-  const meeting = store.createMeeting({ title, duration });
+  const meeting = store.createMeeting({ title, duration }, isInUse);
+  if (!meeting) {
+    return res.status(503).json({ error: 'too-many-meetings' });
+  }
   res.status(201).json({
     id: meeting.id,
     adminToken: meeting.adminToken,
@@ -89,10 +101,16 @@ app.get('/api/meetings/:token/events', (req, res) => {
   });
   res.flushHeaders();
 
-  const sub = { res, role: resolved.role };
   const meetingId = resolved.meeting.id;
   if (!subscribers.has(meetingId)) subscribers.set(meetingId, new Set());
-  subscribers.get(meetingId).add(sub);
+  const subs = subscribers.get(meetingId);
+  if (subs.size >= MAX_VIEWS_PER_MEETING) {
+    const oldest = subs.values().next().value;
+    subs.delete(oldest);
+    oldest.close();
+  }
+  const sub = { res, role: resolved.role, close: () => { clearInterval(heartbeat); res.end(); } };
+  subs.add(sub);
 
   sendState(res, resolved.meeting, resolved.role); // initial snapshot
 
@@ -141,7 +159,7 @@ app.post('/api/meetings/:token/adjust', handleAction((meeting, body) => store.ad
 // Deletes the meetings that have been idle for store.MEETING_TTL_MS. A meeting
 // with an open SSE connection is in use, so there is never a stream to close.
 function expireIdleMeetings(now) {
-  return store.expireIdleMeetings(now, (meetingId) => subscribers.has(meetingId));
+  return store.expireIdleMeetings(now, isInUse);
 }
 
 // unref(): the cleanup alone shouldn't keep the process (or the tests) running.
@@ -174,3 +192,4 @@ if (require.main === module) {
 
 module.exports = app;
 module.exports.expireIdleMeetings = expireIdleMeetings;
+module.exports.MAX_VIEWS_PER_MEETING = MAX_VIEWS_PER_MEETING;

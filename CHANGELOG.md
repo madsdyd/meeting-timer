@@ -8,6 +8,9 @@ also the tag of the docker image and the git tag. See "Releasing" in [README.md]
 - The speaking time is at most 24 hours, and a title at most 200 characters; the server rejects longer ones.
 - Meetings are deleted after 24 hours without activity (no actions and no open view).
 - The container's memory is limited to 256 MB.
+- At most 100 meetings at a time: a new one replaces the longest idle meeting without an open view, and is refused
+  (with a message on the front page) only if every meeting has one. A meeting has at most 10 open views; a new one
+  closes the oldest, which reconnects by itself.
 
 ## 2026-11-26
 
