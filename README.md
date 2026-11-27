@@ -109,6 +109,11 @@ forstyrrer en server, der allerede kører. Kør det igen, når brugerfladen ænd
   om timeren kørte eller ej — enklere regel end at kræve pause først.
 - **Vanilla JS/HTML/CSS uden build-step** for både server- og klientkode, så
   koden er let at læse og ændre uden værktøjskæde.
+- **Sikkerhedsheadere fra appen.** Serveren sender en
+  `Content-Security-Policy` (kun egne filer, ingen indlejring i andre sider),
+  `X-Content-Type-Options: nosniff` og `Referrer-Policy: no-referrer`, da
+  tokens står i URL'en. Derfor har siderne ingen inline-scripts eller
+  `style`-attributter: koden ligger i `js/`, og stylingen i `css/style.css`.
 - **QR-koder genereres server-side** (npm-pakken `qrcode`) og leveres som
   SVG, så klienten ikke behøver noget QR-bibliotek i browseren.
 
@@ -127,6 +132,8 @@ client/             Statiske sider, ingen build-step
   img/               Skærmbilleder til vejledningen (tools/vejledning-billeder)
   js/api.js          Wrapper omkring REST + SSE
   js/viewer.js       Visningen; bruges af view.html og når admin.html skifter til visning
+  js/create.js, js/admin.js, js/view.js, js/vejledning.js
+                     Sidernes egen kode (ingen inline-scripts, se CSP nedenfor)
   js/timerDisplay.js Delt render-logik for nedtælling/cirkel-animation
   css/style.css
 ```

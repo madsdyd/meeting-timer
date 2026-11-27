@@ -8,6 +8,20 @@ const QRCode = require('qrcode');
 const store = require('./meetingStore');
 
 const app = express();
+app.disable('x-powered-by');
+
+// Security headers on every response. The client only loads its own files
+// (no inline scripts or styles, nothing from other hosts), so the CSP can
+// allow 'self' alone; it also forbids embedding the pages in other sites.
+// The tokens are in the URLs, so no Referer is ever sent.
+app.use((req, res, next) => {
+  res.set({
+    'Content-Security-Policy': "default-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
+    'X-Content-Type-Options': 'nosniff',
+    'Referrer-Policy': 'no-referrer',
+  });
+  next();
+});
 // The request bodies are small ({ title, duration }); this keeps a client from
 // filling the memory with large ones.
 app.use(express.json({ limit: '1kb' }));

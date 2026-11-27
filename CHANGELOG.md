@@ -11,6 +11,9 @@ also the tag of the docker image and the git tag. See "Releasing" in [README.md]
 - At most 100 meetings at a time: a new one replaces the longest idle meeting without an open view, and is refused
   (with a message on the front page) only if every meeting has one. A meeting has at most 10 open views; a new one
   closes the oldest, which reconnects by itself.
+- Security headers: a Content-Security-Policy that allows only the app's own files and no embedding in other sites,
+  `X-Content-Type-Options: nosniff` and `Referrer-Policy: no-referrer`; no more `X-Powered-By`. The pages' inline
+  scripts and styles moved to `client/js/` and `style.css`.
 
 ## 2026-11-26
 

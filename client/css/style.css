@@ -154,6 +154,8 @@ button.primary { background: var(--accent); color: #fff; border-color: var(--acc
 
 .steps { margin: 0; padding-left: 1.4em; font-size: 18px; line-height: 1.5; }
 .button-row--center { justify-content: center; }
+.button-row--spaced, .qr--spaced { margin-top: 16px; }
+.button-row > .grow { flex: 1; }
 
 /* The two ways to create a meeting on the front page: equal-weight buttons,
    each with its explanation visible below it (touch screens have no hover).

@@ -282,3 +282,29 @@ test('creating a meeting fails with 503 when every meeting is in use', async () 
     await new Promise((resolve) => setTimeout(resolve, 10));
   }
 });
+
+test('responses carry the security headers and no X-Powered-By', async () => {
+  await withServer(async (base) => {
+    for (const path of ['/', '/admin.html', '/js/api.js', '/api/meetings/does-not-exist']) {
+      const res = await fetch(base + path);
+      const csp = res.headers.get('content-security-policy');
+      assert.ok(csp && csp.includes("default-src 'self'") && csp.includes("frame-ancestors 'none'"), path);
+      assert.ok(!/unsafe-inline/.test(csp), path);
+      assert.equal(res.headers.get('x-content-type-options'), 'nosniff', path);
+      assert.equal(res.headers.get('referrer-policy'), 'no-referrer', path);
+      assert.equal(res.headers.get('x-powered-by'), null, path);
+    }
+  });
+});
+
+test('the pages have no inline scripts or style attributes, which the CSP would block', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const dir = path.join(__dirname, '..', 'client');
+  for (const page of fs.readdirSync(dir).filter((f) => f.endsWith('.html'))) {
+    const html = fs.readFileSync(path.join(dir, page), 'utf8');
+    assert.doesNotMatch(html, /<script(?![^>]*\bsrc=)[^>]*>/, `${page}: inline <script>`);
+    assert.doesNotMatch(html, /\sstyle=|\son[a-z]+=/, `${page}: style or event handler attribute`);
+    assert.doesNotMatch(html, /<style/, `${page}: <style> block`);
+  }
+});
