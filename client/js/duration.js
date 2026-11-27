@@ -5,6 +5,7 @@
 
 const DURATION_STEP_SECONDS = 10;
 const DURATION_MIN_SECONDS = 5;
+const DURATION_MAX_SECONDS = 24 * 60 * 60; // the server's maximum (MAX_DURATION_SECONDS)
 
 function formatDuration(totalSeconds) {
   const seconds = Math.max(0, Math.round(totalSeconds));
@@ -40,14 +41,18 @@ function createDurationInput(container, { seconds = DURATION_MIN_SECONDS } = {})
   const upEl = container.querySelector('.duration-up');
   const downEl = container.querySelector('.duration-down');
 
-  let current = Math.max(DURATION_MIN_SECONDS, Math.round(seconds));
+  function clamp(value) {
+    return Math.min(DURATION_MAX_SECONDS, Math.max(DURATION_MIN_SECONDS, Math.round(value)));
+  }
+
+  let current = clamp(seconds);
 
   function render() {
     fieldEl.value = formatDuration(current);
   }
 
   function setSeconds(value) {
-    current = Math.max(DURATION_MIN_SECONDS, Math.round(value));
+    current = clamp(value);
     render();
   }
 

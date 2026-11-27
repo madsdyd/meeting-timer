@@ -13,6 +13,8 @@ services:
       - "127.0.0.1:3000:3000"
     environment:
       - PORT=3000
+    # Meetings live in memory; a limit keeps a flood of them from taking the host's memory.
+    mem_limit: 256m
     read_only: true
     tmpfs:
       - /tmp

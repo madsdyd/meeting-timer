@@ -8,7 +8,9 @@ const QRCode = require('qrcode');
 const store = require('./meetingStore');
 
 const app = express();
-app.use(express.json());
+// The request bodies are small ({ title, duration }); this keeps a client from
+// filling the memory with large ones.
+app.use(express.json({ limit: '1kb' }));
 
 // How often an open SSE stream gets a heartbeat. While the timer runs, the
 // heartbeat is the full state, so clients re-anchor their countdown and any
@@ -37,6 +39,7 @@ function findMeeting(req, res) {
     res.status(404).json({ error: 'unknown-token' });
     return null;
   }
+  store.touch(resolved.meeting);
   return resolved;
 }
 
@@ -50,9 +53,14 @@ function requireAdmin(req, res, resolved) {
 
 // POST /api/meetings { title?, duration } -> { id, adminToken, viewerToken }
 app.post('/api/meetings', (req, res) => {
-  const { title, duration } = req.body || {};
-  if (typeof duration !== 'number' || !Number.isFinite(duration) || duration <= 0) {
+  const body = req.body || {};
+  const { duration } = body;
+  if (!store.isValidDuration(duration)) {
     return res.status(400).json({ error: 'invalid-duration' });
+  }
+  const title = store.normalizeTitle(body.title);
+  if (title === null) {
+    return res.status(400).json({ error: 'invalid-title' });
   }
   const meeting = store.createMeeting({ title, duration });
   res.status(201).json({
@@ -89,13 +97,23 @@ app.get('/api/meetings/:token/events', (req, res) => {
   sendState(res, resolved.meeting, resolved.role); // initial snapshot
 
   const heartbeat = setInterval(() => {
-    if (resolved.meeting.running) sendState(res, resolved.meeting, resolved.role);
-    else res.write(': ping\n\n');
+    // An exception here would not reach Express and would stop the whole
+    // process, so a fault in one meeting must not take the others with it.
+    try {
+      if (resolved.meeting.running) sendState(res, resolved.meeting, resolved.role);
+      else res.write(': ping\n\n');
+    } catch (err) {
+      console.error('SSE heartbeat failed:', err);
+    }
   }, req.app.get('heartbeatMs'));
 
   req.on('close', () => {
     clearInterval(heartbeat);
-    subscribers.get(meetingId)?.delete(sub);
+    const subs = subscribers.get(meetingId);
+    subs?.delete(sub);
+    if (subs?.size === 0) subscribers.delete(meetingId);
+    // The meeting's idle time counts from when its last client left.
+    store.touch(resolved.meeting);
   });
 });
 
@@ -119,6 +137,15 @@ app.post('/api/meetings/:token/pause', handleAction((meeting) => store.pause(mee
 app.post('/api/meetings/:token/reset', handleAction((meeting) => store.reset(meeting)));
 app.post('/api/meetings/:token/restart', handleAction((meeting) => store.restart(meeting)));
 app.post('/api/meetings/:token/adjust', handleAction((meeting, body) => store.adjust(meeting, body.duration)));
+
+// Deletes the meetings that have been idle for store.MEETING_TTL_MS. A meeting
+// with an open SSE connection is in use, so there is never a stream to close.
+function expireIdleMeetings(now) {
+  return store.expireIdleMeetings(now, (meetingId) => subscribers.has(meetingId));
+}
+
+// unref(): the cleanup alone shouldn't keep the process (or the tests) running.
+setInterval(() => expireIdleMeetings(), 60 * 60 * 1000).unref();
 
 // GET /api/qr?text=<url> -> SVG QR code for arbitrary text (used to render the
 // admin/viewer links as scannable codes without any client-side QR library).
@@ -146,3 +173,4 @@ if (require.main === module) {
 }
 
 module.exports = app;
+module.exports.expireIdleMeetings = expireIdleMeetings;

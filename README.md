@@ -73,6 +73,8 @@ forstyrrer en server, der allerede kører. Kør det igen, når brugerfladen ænd
 - **In-memory, ingen database.** Alt data (møder, tokens) ligger i serverens
   hukommelse og forsvinder ved genstart. Det er en bevidst afgrænsning for at
   holde løsningen simpel — bevidst valgt fremfor at tilføje en database.
+  Et møde slettes efter 24 timer uden aktivitet (ingen handlinger og ingen
+  åben visning), så møderne ikke hober sig op i hukommelsen.
 - **To tokens pr. møde** (admin/viewer) i stedet for login. Der er ingen
   brugerkonti — den der har admin-linket kan styre, alle andre kan kun se.
   Tokens er tilfældige (12 URL-sikre tegn), hvilket er "sikkert nok" til
@@ -144,6 +146,10 @@ Status (`GET`, SSE-begivenheden `state` og svaret på handlingerne) er
 admin-token også `viewerToken`. `duration` og `remaining` er i sekunder,
 `remainingMs` i millisekunder og negativ i overtid. Klienten tæller ned fra
 `remainingMs`; `endsAt` er kun til information.
+
+`duration` er højst 24 timer (86400 sekunder), ellers svarer serveren 400
+`invalid-duration`. `title` er valgfri, men skal være en tekst på højst 200
+tegn (efter trim), ellers 400 `invalid-title`. Kroppen må højst være 1 kB.
 
 ## Hvad der er skåret fra (givet tidsrammen)
 

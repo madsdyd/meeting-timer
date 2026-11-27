@@ -136,3 +136,83 @@ test('SSE stream sends the state as a heartbeat while running', async () => {
     app.set('heartbeatMs', 10000);
   }
 });
+
+test('a duration over the maximum is rejected on create and adjust', async () => {
+  const store = require('./meetingStore');
+  await withServer(async (base) => {
+    const tooLong = store.MAX_DURATION_SECONDS + 1;
+    const created = await postJson(`${base}/api/meetings`, { duration: 10000000000000 });
+    assert.equal(created.status, 400);
+    assert.equal(created.body.error, 'invalid-duration');
+    assert.equal((await postJson(`${base}/api/meetings`, { duration: tooLong })).status, 400);
+
+    const atMax = await postJson(`${base}/api/meetings`, { duration: store.MAX_DURATION_SECONDS });
+    assert.equal(atMax.status, 201);
+    const { adminToken } = atMax.body;
+    const adjusted = await postJson(`${base}/api/meetings/${adminToken}/adjust`, { duration: tooLong });
+    assert.equal(adjusted.status, 400);
+    assert.equal(adjusted.body.error, 'invalid-duration');
+
+    const started = await postJson(`${base}/api/meetings/${adminToken}/start`);
+    assert.equal(started.status, 200);
+  });
+});
+
+test('title must be a string of at most MAX_TITLE_LENGTH characters', async () => {
+  const store = require('./meetingStore');
+  await withServer(async (base) => {
+    const titleOf = async (body) => {
+      const created = await postJson(`${base}/api/meetings`, body);
+      assert.equal(created.status, 201);
+      return (await fetch(`${base}/api/meetings/${created.body.viewerToken}`).then((r) => r.json())).title;
+    };
+    assert.equal(await titleOf({ title: '  Punkt 2  ', duration: 60 }), 'Punkt 2');
+    assert.equal(await titleOf({ title: '', duration: 60 }), 'Møde');
+    assert.equal(await titleOf({ duration: 60 }), 'Møde');
+    const longest = 'x'.repeat(store.MAX_TITLE_LENGTH);
+    assert.equal(await titleOf({ title: longest, duration: 60 }), longest);
+
+    for (const title of [longest + 'x', { a: 1 }, ['a'], 42]) {
+      const res = await postJson(`${base}/api/meetings`, { title, duration: 60 });
+      assert.equal(res.status, 400, JSON.stringify(title));
+      assert.equal(res.body.error, 'invalid-title');
+    }
+  });
+});
+
+test('request bodies over 1 kB are rejected', async () => {
+  await withServer(async (base) => {
+    const res = await postJson(`${base}/api/meetings`, { title: 'x'.repeat(2000), duration: 60 });
+    assert.equal(res.status, 413);
+  });
+});
+
+test('idle meetings expire, but not while a client is connected', async () => {
+  const store = require('./meetingStore');
+  const later = () => require('node:perf_hooks').performance.now() + store.MEETING_TTL_MS + 1000;
+  await withServer(async (base) => {
+    const idle = (await postJson(`${base}/api/meetings`, { duration: 60 })).body;
+    const watched = (await postJson(`${base}/api/meetings`, { duration: 60 })).body;
+
+    // Nothing expires within the TTL.
+    app.expireIdleMeetings(later() - 2 * 1000);
+    assert.equal((await fetch(`${base}/api/meetings/${idle.viewerToken}`)).status, 200);
+
+    const controller = new AbortController();
+    const res = await fetch(`${base}/api/meetings/${watched.viewerToken}/events`, { signal: controller.signal });
+    await res.body.getReader().read(); // the initial snapshot: the connection is registered
+
+    app.expireIdleMeetings(later());
+    assert.equal((await fetch(`${base}/api/meetings/${idle.adminToken}`)).status, 404);
+    assert.equal((await fetch(`${base}/api/meetings/${idle.viewerToken}`)).status, 404);
+    assert.equal((await fetch(`${base}/api/meetings/${watched.viewerToken}`)).status, 200);
+
+    // Once the last connection closes, the meeting expires like any other.
+    controller.abort();
+    for (let i = 0; i < 100 && store.resolveToken(watched.viewerToken); i++) {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      app.expireIdleMeetings(later());
+    }
+    assert.equal(store.resolveToken(watched.viewerToken), null);
+  });
+});

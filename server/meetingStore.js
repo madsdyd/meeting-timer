@@ -12,6 +12,31 @@ const { performance } = require('perf_hooks');
 const meetings = new Map(); // id -> meeting
 const tokenIndex = new Map(); // token -> { meetingId, role: 'admin' | 'viewer' }
 
+// The longest speaking time that can be set. It also keeps every derived
+// timestamp (`endsAt`) a valid Date, which an unbounded duration would not.
+const MAX_DURATION_SECONDS = 24 * 60 * 60;
+
+function isValidDuration(duration) {
+  return typeof duration === 'number' && Number.isFinite(duration) && duration > 0 && duration <= MAX_DURATION_SECONDS;
+}
+
+const MAX_TITLE_LENGTH = 200;
+const DEFAULT_TITLE = 'Møde';
+
+// Returns the title to store, trimmed and with the default for a missing or
+// empty one, or null if the title isn't a string or is too long.
+function normalizeTitle(title) {
+  if (title === undefined || title === null) return DEFAULT_TITLE;
+  if (typeof title !== 'string') return null;
+  const trimmed = title.trim();
+  if (trimmed.length > MAX_TITLE_LENGTH) return null;
+  return trimmed || DEFAULT_TITLE;
+}
+
+// A meeting nobody has used or watched for this long is deleted, so meetings
+// don't pile up in memory until the next restart.
+const MEETING_TTL_MS = 24 * 60 * 60 * 1000;
+
 function makeToken() {
   return crypto.randomBytes(9).toString('base64url'); // 12 url-safe chars
 }
@@ -23,7 +48,7 @@ function createMeeting({ title, duration }) {
 
   const meeting = {
     id,
-    title: title || 'Møde',
+    title: normalizeTitle(title) ?? DEFAULT_TITLE,
     duration, // configured length in seconds, used by reset/adjust
     remainingMs: duration * 1000, // milliseconds left while paused
     endsAtMono: null, // performance.now() value at which the countdown reaches 0, set while running
@@ -31,6 +56,7 @@ function createMeeting({ title, duration }) {
     adminToken,
     viewerToken,
     createdAt: new Date().toISOString(),
+    lastActivityMono: performance.now(), // see touch() and expireIdleMeetings()
   };
 
   meetings.set(id, meeting);
@@ -47,6 +73,26 @@ function resolveToken(token) {
   const meeting = meetings.get(entry.meetingId);
   if (!meeting) return null;
   return { meeting, role: entry.role };
+}
+
+// Marks the meeting as in use, which postpones its expiry.
+function touch(meeting) {
+  meeting.lastActivityMono = performance.now();
+}
+
+// Deletes the meetings that haven't been touched for MEETING_TTL_MS at `now`
+// (a performance.now() value), except those `isInUse(meetingId)` keeps.
+// Returns the ids of the deleted meetings.
+function expireIdleMeetings(now = performance.now(), isInUse = () => false) {
+  const expired = [];
+  for (const meeting of meetings.values()) {
+    if (now - meeting.lastActivityMono <= MEETING_TTL_MS || isInUse(meeting.id)) continue;
+    meetings.delete(meeting.id);
+    tokenIndex.delete(meeting.adminToken);
+    tokenIndex.delete(meeting.viewerToken);
+    expired.push(meeting.id);
+  }
+  return expired;
 }
 
 // Milliseconds left, positive while there's time, negative once the speaker is in overtime.
@@ -94,7 +140,7 @@ function restart(meeting) {
 }
 
 function adjust(meeting, duration) {
-  if (typeof duration !== 'number' || !Number.isFinite(duration) || duration <= 0) {
+  if (!isValidDuration(duration)) {
     return { ok: false, error: 'invalid-duration' };
   }
   meeting.duration = duration;
@@ -129,6 +175,13 @@ function toPublicState(meeting, role) {
 }
 
 module.exports = {
+  MAX_DURATION_SECONDS,
+  isValidDuration,
+  MAX_TITLE_LENGTH,
+  normalizeTitle,
+  MEETING_TTL_MS,
+  touch,
+  expireIdleMeetings,
   createMeeting,
   resolveToken,
   computeRemaining,
