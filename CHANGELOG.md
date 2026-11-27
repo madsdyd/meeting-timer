@@ -5,6 +5,8 @@ also the tag of the docker image and the git tag. See "Releasing" in [README.md]
 
 ## Unreleased
 
+## 2026-11-27
+
 - The speaking time is at most 24 hours, and a title at most 200 characters; the server rejects longer ones.
 - Meetings are deleted after 24 hours without activity (no actions and no open view).
 - The container's memory is limited to 256 MB.
